@@ -1,0 +1,135 @@
+--USAMOS EL USUARIO MAESTRO, EL WAREHOUSE QUE TENEMOS Y LA BD REQUERIDA
+USE ROLE ACCOUNTADMIN
+USE WAREHOUSE COMPUTE_WH
+
+--CREAMOS LA BASE DE DATOS PARA TRABAJAR
+CREATE DATABASE AI_IMPACT_DB
+
+-- CREANDO LA ESTRUCTURA MEDALLON
+CREATE OR REPLACE SCHEMA AI_IMPACT_DB.BRONZE;
+CREATE OR REPLACE SCHEMA AI_IMPACT_DB.SILVER;
+CREATE OR REPLACE SCHEMA AI_IMPACT_DB.GOLD;
+
+--CREANDO EL FILE FORMAT, PARA QUE SNOWFLAKE LEA BIEN EL CSV
+CREATE OR REPLACE FILE FORMAT AI_IMPACT_DB.BRONZE.CSV_GENERIC_FORMAT
+    TYPE = 'CSV'
+    FIELD_DELIMITER = ','
+    SKIP_HEADER = 1
+    FIELD_OPTIONALLY_ENCLOSED_BY ='"'
+    NULL_IF = ('NULL', 'null', '')
+    EMPTY_FIELD_AS_NULL = TRUE;
+
+-- CREANDO EL INTERNAL STAGE DONDE ATERRIZAN LOS DATOS
+CREATE OR REPLACE STAGE AI_IMPACT_DB.BRONZE.STG_RAW_DATA
+    DIRECTORY = (ENABLE = TRUE)
+    FILE_FORMAT = AI_IMPACT_DB.BRONZE.CSV_GENERIC_FORMAT;
+
+-- CAPA BRONZE
+
+-- CREAMOS LA TABLA EN EL ESQUEMA BRONZE DONDE ATERRIZARÁN LOS DATOS DESDE EL STAGE
+CREATE OR REPLACE TABLE AI_IMPACT_DB.BRONZE.RAW_AI_DATA(
+    Employee_ID varchar,
+    Age varchar,
+    Gender varchar,
+    Education_Level varchar,
+    Industry varchar,
+    Job_Role varchar,
+    Years_Experience varchar,
+    AI_Adoption_Level varchar,
+    Automation_Risk varchar,
+    Upskilling_Required  varchar,
+    Salary_Before_AI varchar,
+    Salary_After_AI varchar,
+    Job_Status varchar,
+    Work_Hours_Per_Week varchar,
+    Remote_Work varchar,
+    Job_Satisfaction varchar,
+    Productivity_Change_Pct varchar
+);
+
+-- CARGANDO LOS DATOS EN LA TABLA CREADA ANTERIORMENTE
+COPY INTO AI_IMPACT_DB.BRONZE.RAW_AI_DATA
+FROM @AI_IMPACT_DB.BRONZE.STG_RAW_DATA
+FILES = ('ai_job_impact.csv')
+FILE_FORMAT = (FORMAT_NAME = 'AI_IMPACT_DB.BRONZE.CSV_GENERIC_FORMAT')
+ON_ERROR = 'CONTINUE';
+
+-- COMPROBANDO QUE LA CARGA DE DATOS HAYA SIDO SATISFACTORIA
+SELECT * FROM AI_IMPACT_DB.BRONZE.RAW_AI_DATA LIMIT 10;
+
+-- CAPA SILVER
+
+-- CREANDO LA TABLA SILVER DONDE SE TRANSFORMAN LOS TIPOS DE DATOS
+CREATE OR REPLACE TABLE AI_IMPACT_DB.SILVER.CLEANED_AI_DATA AS
+SELECT
+    TRIM(Employee_ID):: varchar AS Employee_ID,
+    CAST(Age AS INT) AS Age,
+    TRIM(Gender):: varchar AS Gender,
+    TRIM(Education_Level):: varchar AS Education_Level,
+    TRIM(Industry):: varchar AS Industry,
+    TRIM(Job_Role):: varchar AS Job_Role,
+    CAST(Years_Experience AS INT) AS Years_Experience,
+    TRIM(AI_Adoption_Level):: varchar AS AI_Adoption_Level,
+    TRIM(Automation_Risk):: varchar AS Automation_Risk,
+    CASE
+        WHEN UPPER(TRIM(Upskilling_Required)) = 'YES' THEN TRUE
+        ELSE FALSE
+    END AS Upskilling_Required_Bool,
+    CAST(Salary_Before_AI AS NUMBER(10,2)) AS Salary_Before_AI,
+    CAST(Salary_After_AI AS NUMBER(10,2)) AS Salary_After_AI,
+    TRIM(Job_Status):: varchar AS Job_Status,
+    CAST(Work_Hours_Per_Week AS INT) AS Work_Hours_Per_Week,
+    CASE
+        WHEN UPPER(TRIM(Remote_Work)) = 'YES' THEN TRUE
+        ELSE FALSE
+    END AS Remote_Work_Bool,
+    CAST(Job_Satisfaction AS INT) AS Job_Satisfaction,
+    CAST(Productivity_Change_Pct AS FLOAT) AS Productivity_Change_Pct,
+    CURRENT_TIMESTAMP() AS Load_Timestamp
+FROM AI_IMPACT_DB.BRONZE.RAW_AI_DATA;
+
+-- REVISANDO QUE LOS CAMBIOS SE HAYAN HECHO CORRECTAMENTE
+DESCRIBE TABLE AI_IMPACT_DB.SILVER.CLEANED_AI_DATA;
+
+-- CAPA GOLD
+
+--VISTA QUE MUESTRA EL INSIGHT "IMPACTO SALARIAL POR INDUSTRIA"
+CREATE OR REPLACE VIEW AI_IMPACT_DB.GOLD.VW_SALARY_IMPACT_BY_INDUSTRY AS
+SELECT
+    Industry,
+    ROUND(AVG(Salary_Before_AI), 2) AS Avg_Salary_Before,
+    ROUND(AVG(Salary_After_AI), 2) AS Avg_Salary_After,
+    ROUND(AVG(Salary_After_AI - Salary_Before_AI), 2) AS Net_Change,
+    ROUND(AVG((Salary_After_AI - Salary_Before_AI) / Salary_Before_AI) * 100, 2)      AS Pct_Change
+FROM AI_IMPACT_DB.SILVER.CLEANED_AI_DATA
+GROUP BY Industry
+ORDER BY Pct_Change DESC;
+
+-- CONSULTANDO LA VISTA DE IMPACTO SALARIAL
+SELECT * FROM VW_SALARY_IMPACT_BY_INDUSTRY LIMIT 10
+
+--VISTA QUE MUESTRA EL INSIGHT "Riesgo de Automatizacion vs Nivel Educativo"
+CREATE OR REPLACE VIEW AI_IMPACT_DB.GOLD.VW_EDUCATION_RISK_PROFILE AS
+SELECT
+    Education_Level,
+    Automation_Risk,
+    COUNT(*) AS Employee_Count
+FROM AI_IMPACT_DB.SILVER.CLEANED_AI_DATA
+GROUP BY Education_Level, Automation_Risk
+ORDER BY Education_Level, Employee_Count DESC;
+
+-- CONSULTANDO LA VISTA DE IMPACTO SALARIAL
+SELECT * FROM VW_EDUCATION_RISK_PROFILE LIMIT 10
+
+--VISTA QUE MUESTRA EL INSIGHT "La IA nos vuelve productivos?"
+CREATE OR REPLACE VIEW AI_IMPACT_DB.GOLD.VW_PRODUCTIVITY_VS_SATISFACTION AS
+SELECT
+    Job_Role,
+    ROUND(AVG(Productivity_Change_Pct), 2) AS Avg_Productivity_Gain,
+    ROUND(AVG(Job_Satisfaction), 2) AS Avg_Satisfaction
+FROM AI_IMPACT_DB.SILVER.CLEANED_AI_DATA
+GROUP BY Job_Role
+ORDER BY Avg_Productivity_Gain DESC;
+
+-- CONSULTANDO LA VISTA DE PRODUCTIVIDAD VS SATISFACION
+SELECT * FROM VW_EDUCATION_RISK_PROFILE LIMIT 10
