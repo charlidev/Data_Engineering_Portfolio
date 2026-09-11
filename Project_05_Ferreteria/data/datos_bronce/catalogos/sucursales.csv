@@ -1,0 +1,4 @@
+id_sucursal,nombre,m2_almacen,activa
+1,Matriz Emiliano Zapata,1200,True
+2,Sucursal Centro,450,True
+3,Bodega Norte ,800,False

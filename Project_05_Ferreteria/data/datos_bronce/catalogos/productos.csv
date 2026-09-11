@@ -1,0 +1,7 @@
+id_producto,sku,descripcion,id_categoria,marca
+101,BROC-01,Broca Forstner 20mm,1,Truper
+102,DISC-01,Disco TCG 100 dientes,2,Truper
+103,MOT-01,Motor 2 HP,2,WEG
+104,MDF-18,Hoja MDF 18mm 122x244,3,Arauco
+105,PERF-01,Perfil Gola Aluminio,3,
+106,BROC-01 ,broca forstner 20mm ,1,truper
