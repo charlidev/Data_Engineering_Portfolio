@@ -32,14 +32,14 @@ def inicializar_directorios():
 def generar_productos():
     # Definir la lista de diccionarios con la data base de los productos de la ferretería
     productos = [
-        {"id_producto": 101, "sku": "BROC-01", "descripcion": "Broca Forstner 20mm", "id_categoria": 1, "marca": "Truper", "precio_venta": 150.00},
-        {"id_producto": 102, "sku": "DISC-01", "descripcion": "Disco TCG 100 dientes", "id_categoria": 2, "marca": "Truper", "precio_venta": 700.00},
-        {"id_producto": 103, "sku": "MOT-01", "descripcion": "Motor 2 HP", "id_categoria": 2, "marca": "WEG", "precio_venta": 3000.00},
-        {"id_producto": 104, "sku": "MDF-18", "descripcion": "Hoja MDF 18mm 122x244", "id_categoria": 3, "marca": "Arauco", "precio_venta": 650.00},
+        {"id_producto": 101, "sku": "BROC-01", "descripcion": "Broca Forstner 20mm", "id_subcategoria": 10, "id_proveedor": 1,"marca": "Truper", "precio_venta": 150.00, "precio_compra": 100.00},
+        {"id_producto": 102, "sku": "DISC-01", "descripcion": "Disco TCG 100 dientes", "id_subcategoria": 11, "id_proveedor": 2, "marca": "Truper", "precio_venta": 700.00, "precio_compra": 550.00},
+        {"id_producto": 103, "sku": "MOT-01", "descripcion": "Motor 2 HP", "id_subcategoria": 12, "id_proveedor": 3, "marca": "WEG", "precio_venta": 3000.00, "precio_compra": 2500.00},
+        {"id_producto": 104, "sku": "MDF-18", "descripcion": "Hoja MDF 18mm 122x244", "id_subcategoria": 13, "id_proveedor": 4, "marca": "Arauco", "precio_venta": 650.00, "precio_compra": 590.00},
         # Dato sucio: Marca vacía (simulando un olvido en la captura del sistema origen)
-        {"id_producto": 105, "sku": "PERF-01", "descripcion": "Perfil Gola Aluminio", "id_categoria": 3, "marca": "", "precio_venta": ""},
+        {"id_producto": 105, "sku": "PERF-01", "descripcion": "Perfil Gola Aluminio", "id_subcategoria": 14, "id_proveedor": 5, "marca": "", "precio_venta": "99", "precio_compra": 50.00},
         # Dato sucio: Registro duplicado intencional con minúsculas y espacios extra (simulando captura manual errónea)
-        {"id_producto": 106, "sku": "BROC-01 ", "descripcion": "broca forstner 20mm ", "id_categoria": 1, "marca": "truper", "precio_venta": 150.00}
+        {"id_producto": 106, "sku": "BROC-01 ", "descripcion": "broca forstner 20mm ", "id_subcategoria": 15, "id_proveedor": 6, "marca": "truper", "precio_venta": 150.00, "precio_compra": 100.00}
     ]
     # Retornar la lista de productos generada|
     return productos
